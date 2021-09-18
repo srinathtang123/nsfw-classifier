@@ -109,7 +109,7 @@ class Trainer(object):
         self.ratio=0.7 
         self.train_batch_size=64
         self.val_batch_size=64
-        self.epochs = 1
+        self.epochs = 10
         self.lr = 0.001
         self.log_dir='results/exp1/'
         self.model_save_path = 'results/exp1/'
@@ -148,7 +148,7 @@ class Trainer(object):
                 self.optimizer.step()
                 loop.set_description(f'train [{epoch}/{self.epochs}]')
                 loop.set_postfix(loss=loss)
-                break
+                # break
             self.train_loss_epoch/=cnt
             self.writer.add_scalar("epoch_loss/train", self.train_loss_epoch, global_step=epoch)
             self.clf.eval()
@@ -165,7 +165,7 @@ class Trainer(object):
                 self.val_step+=1 
                 loop.set_description(f'val [{epoch}/{self.epochs}]')
                 loop.set_postfix(loss=loss)
-                break
+                # break
             self.val_loss_epoc/=cnt
             self.writer.add_scalar("epoch_loss/val", self.val_loss_epoc, global_step=epoch)
             ckpt = {'epoch':epoch, 'state_dict':self.clf.state_dict(), 'optimizer':self.optimizer.state_dict(), 'loss':loss }
@@ -205,8 +205,8 @@ class Trainer(object):
 
 if __name__=='__main__':
     trainer = Trainer()
-    # trainer.train_loop()
-    trainer.test_loop('results/exp1/epoch:0-val_loss:0.6944313645362854.pth.tar')
+    trainer.train_loop()
+    # trainer.test_loop('results/exp1/epoch:0-val_loss:0.6944313645362854.pth.tar')
     # with profile(activities=[ProfilerActivity.CUDA], record_shapes=True) as prof:
     #     with record_function("model_inference"):
     #         trainer.train_loop()
