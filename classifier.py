@@ -15,6 +15,7 @@ from transformers import (AutoTokenizer,
 import pandas as pd
 from prettytable import PrettyTable
 from tqdm import tqdm
+import sys
 
 class MyClassifier(nn.Module):
     def __init__(self,device):
@@ -108,7 +109,7 @@ class Trainer(object):
         self.data_path = 'data/train/bq-results-20210825-203004-swh711l21gv2.csv'
         self.ratio=0.7 
         self.train_batch_size=32
-        self.val_batch_size=32
+        self.val_batch_size=8
         self.epochs = 10
         self.lr = 0.001
         self.log_dir='results/exp1/'
@@ -132,29 +133,36 @@ class Trainer(object):
             self.model.train()
             self.train_loss_epoch = 0
             cnt = 0
-            loop = tqdm(self.train_loader)
-            for x,y in loop:
-                y = y.to(self.device)
-                y_hat = self.model(x)
-                loss = self.criterion(y_hat,y.long())   
-                self.train_loss_epoch+=loss
-                cnt+=1
-                self.writer.add_scalar("batch_loss/train", loss, global_step=self.train_step)
-                self.train_step+=1         
-                #backward
-                self.optimizer.zero_grad()
-                loss.backward()
-                #step
-                self.optimizer.step()
-                loop.set_description(f'train [{epoch}/{self.epochs}]')
-                loop.set_postfix(loss=loss)
-                # break
+            try:
+                loop = tqdm(self.train_loader)
+                for x,y in loop:
+                    y = y.to(self.device)
+                    y_hat = self.model(x)
+                    loss = self.criterion(y_hat,y.long())   
+                    self.train_loss_epoch+=loss
+                    cnt+=1
+                    self.writer.add_scalar("batch_loss/train", loss, global_step=self.train_step)
+                    self.train_step+=1         
+                    #backward
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    #step
+                    self.optimizer.step()
+                    loop.set_description(f'train [{epoch}/{self.epochs}]')
+                    loop.set_postfix(loss=loss)
+                    # break
+            except RuntimeError:
+                print(sys.exc_info())
+                print('Runtime Error could be due to gpu memeory decresing batch size')
+                self.train_batch_size/=2
+
             self.train_loss_epoch/=cnt
             self.writer.add_scalar("epoch_loss/train", self.train_loss_epoch, global_step=epoch)
             self.model.eval()
             self.val_loss_epoc = 0
             cnt = 0
             loop = tqdm(self.val_loader)
+            
             for x,y in loop:
                 y = y.to(self.device)
                 y_hat = self.model(x)
@@ -205,7 +213,7 @@ class Trainer(object):
 
 if __name__=='__main__':
     trainer = Trainer()
-    # trainer.train_loop()
+    trainer.train_loop()
     # trainer.test_loop('results/exp1/epoch:0-val_loss:0.6944313645362854.pth.tar')
     # with profile(activities=[ProfilerActivity.CUDA], record_shapes=True) as prof:
     #     with record_function("model_inference"):
