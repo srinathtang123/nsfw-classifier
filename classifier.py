@@ -1,4 +1,3 @@
-from math import log
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -87,8 +86,8 @@ def split_train_val_dataloader(dataset, train_batch_size=32, val_batch_size=32, 
     train_len = int(data_len*ratio)
     val_len = data_len-train_len
     train_set,val_set = random_split(dataset,[train_len,val_len])
-    train_loader = DataLoader(train_set, batch_size=train_batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=val_batch_size, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=train_batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=val_batch_size, shuffle=True, num_workers=4, pin_memory=True)
     return train_loader,val_loader
 
 
