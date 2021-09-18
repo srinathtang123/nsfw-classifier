@@ -49,6 +49,7 @@ class MyClassifier(nn.Module):
         # self.tokens.to(self.device)
         for key in self.tokens.keys():
             self.tokens[key] = self.tokens[key].to(self.device)
+        
         self.embedding = self.embedder(**self.tokens)
         o,(h,c) = self.rnn(self.embedding.last_hidden_state)
         h = h.squeeze(0)
@@ -109,7 +110,7 @@ class Trainer(object):
         self.data_path = 'data/train/bq-results-20210825-203004-swh711l21gv2.csv'
         self.ratio=0.7 
         self.train_batch_size=32
-        self.val_batch_size=8
+        self.val_batch_size=4
         self.epochs = 10
         self.lr = 0.001
         self.log_dir='results/exp1/'
