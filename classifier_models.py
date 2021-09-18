@@ -47,3 +47,15 @@ class MyClassifierEmbed(nn.Module):
         h = h.squeeze(0)
         out = self.linear(h)
         return torch.sigmoid(out)
+
+class MyClassifierEmbedTransformer(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.clf_layers = 2
+        self.clf_heads = 4
+        self.clf_config = DistilBertConfig(n_layers=self.clf_layers, n_heads=self.clf_heads)
+        self.clf = DistilBertForSequenceClassification(self.clf_config)
+    def forward(self,embedding):
+        out = self.clf(inputs_embeds=embedding)
+        return out.logits
+

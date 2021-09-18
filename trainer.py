@@ -37,53 +37,67 @@ class Trainer(object):
         self.train_step = 0
         self.val_step = 0
         # self.model.to(self.device)
+
+    def train(self,x,y):
+        x = x.squeeze(0)
+        y = y.squeeze(0)
+        # x = x.to(self.device)
+        y = y.to(self.device)
+        y_hat = self.model(x)
+        loss = self.criterion(y_hat,y.long())   
+        self.train_loss_epoch+=float(loss)
+        self.writer.add_scalar("batch_loss/train", loss, global_step=self.train_step)
+        self.train_step+=1         
+        #backward
+        self.optimizer.zero_grad()
+        loss.backward()
+        #step
+        self.optimizer.step()
+        return loss
+    
+    def val(self,x,y):
+        x = x.squeeze(0)
+        y = y.squeeze(0)
+        # x = x.to(self.device)
+        y = y.to(self.device)
+        y_hat = self.model(x)
+        loss = self.criterion(y_hat,y.long())
+        self.val_loss_epoc+=float(loss)
+        self.writer.add_scalar("batch_loss/val", loss, global_step=self.val_step)
+        self.val_step+=1 
+        return loss
+
+
     def train_loop(self):
         self.model.to(self.device)
         for epoch in range(self.epochs):
+            #train loop
             self.model.train()
             self.train_loss_epoch = 0
             cnt = 0
             loop = tqdm(self.train_loader)
             for x,y in loop:
-                x = x.squeeze(0)
-                y = y.squeeze(0)
-                # x = x.to(self.device)
-                y = y.to(self.device)
-                y_hat = self.model(x)
-                loss = self.criterion(y_hat,y.long())   
-                self.train_loss_epoch+=loss
-                cnt+=1
-                self.writer.add_scalar("batch_loss/train", loss, global_step=self.train_step)
-                self.train_step+=1         
-                #backward
-                self.optimizer.zero_grad()
-                loss.backward()
-                #step
-                self.optimizer.step()
+                loss = self.train(x,y)
                 loop.set_description(f'train [{epoch}/{self.epochs}]')
-                loop.set_postfix(loss=loss)
+                loop.set_postfix(loss=float(loss))
+                cnt+=1
                 # break
-
             self.train_loss_epoch/=cnt
             self.writer.add_scalar("epoch_loss/train", self.train_loss_epoch, global_step=epoch)
+            # val loop
             self.model.eval()
             self.val_loss_epoc = 0
             cnt = 0
             loop = tqdm(self.val_loader)
-            
             for x,y in loop:
-                y = y.to(self.device)
-                y_hat = self.model(x)
-                loss = self.criterion(y_hat,y.long())
-                self.val_loss_epoc+=loss
-                cnt+=1
-                self.writer.add_scalar("batch_loss/val", loss, global_step=self.val_step)
-                self.val_step+=1 
+                loss = self.val(x,y)
                 loop.set_description(f'val [{epoch}/{self.epochs}]')
-                loop.set_postfix(loss=loss)
+                loop.set_postfix(loss=float(loss))
+                cnt+=1
                 # break
             self.val_loss_epoc/=cnt
             self.writer.add_scalar("epoch_loss/val", self.val_loss_epoc, global_step=epoch)
+            #models saving
             ckpt = {'epoch':epoch, 'state_dict':self.model.state_dict(), 'optimizer':self.optimizer.state_dict(), 'loss':loss }
             torch.save(ckpt, self.model_save_path+f'epoch:{epoch}-val_loss:{self.val_loss_epoc}.pth.tar')
             self.writer.add_hparams(
